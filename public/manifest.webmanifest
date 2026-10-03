@@ -1,0 +1,9 @@
+{
+  "name": "Sarali",
+  "short_name": "Sarali",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6d5c6",
+  "theme_color": "#f6d5c6",
+  "description": "Studio app for private music teachers"
+}
