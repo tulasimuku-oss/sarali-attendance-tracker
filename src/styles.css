@@ -220,10 +220,6 @@ html[data-theme="dark"] .app-shell::after {
   filter: invert(1);
 }
 
-.app-shell > * {
-  position: relative;
-  z-index: 1;
-}
 .app-shell > .app-header {
   position: sticky;
   top: 0;
@@ -705,6 +701,15 @@ html[data-theme="dark"] .home-att-legend .absent svg {
   padding: 0;
   display: grid;
   gap: 0.45rem;
+}
+.home-alert-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.home-alert-item .home-alert {
+  flex: 1;
+  min-width: 0;
 }
 .home-alert {
   display: grid;
@@ -1811,7 +1816,7 @@ html[data-theme="dark"] .recording-link {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 8;
+  z-index: 30;
   background: rgba(60, 36, 21, 0.38);
   display: grid;
   place-items: end center;

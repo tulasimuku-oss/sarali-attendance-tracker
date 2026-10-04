@@ -34,11 +34,15 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
     player.addEventListener("canplay", tryPlay);
     player.addEventListener("ended", finish);
     player.addEventListener("error", finish);
+    const failFast = window.setTimeout(() => {
+      if (player.readyState < 2) finish();
+    }, 800);
     const maxWait = window.setTimeout(finish, SPLASH_MAX_MS);
     return () => {
       player.removeEventListener("canplay", tryPlay);
       player.removeEventListener("ended", finish);
       player.removeEventListener("error", finish);
+      window.clearTimeout(failFast);
       window.clearTimeout(maxWait);
       window.clearTimeout(fadeTimer);
     };

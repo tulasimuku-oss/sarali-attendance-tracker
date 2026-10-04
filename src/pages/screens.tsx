@@ -28,10 +28,10 @@ import {
   type StudioState,
 } from "../lib/demo";
 import { FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   AbsentIcon,
   AudioIcon,
-  BinIcon,
   CalendarIcon,
   CloseIcon,
   DownloadIcon,
@@ -139,7 +139,7 @@ function AddSheet({
     return () => window.removeEventListener("keydown", onKey, stacked);
   }, [onClose, stacked]);
 
-  return (
+  return createPortal(
     <div
       className={`modal-backdrop${stacked ? " is-stacked" : ""}`}
       role="presentation"
@@ -165,7 +165,8 @@ function AddSheet({
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -496,10 +497,11 @@ function AttendanceRing({
 }
 
 export function HomePage() {
-  const { studio } = useAuth();
+  const { studio, setStudio } = useAuth();
   const [now, setNow] = useState(() => new Date());
   const [batch, setBatch] = useState("all");
   const [batchTouched, setBatchTouched] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<EventItem | null>(null);
   useEffect(() => {
     const tick = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(tick);
@@ -623,7 +625,7 @@ export function HomePage() {
         ) : (
           <ul className="home-alerts">
             {upcoming.map((event) => (
-              <li key={event.id}>
+              <li key={event.id} className="home-alert-item">
                 <Link className="home-alert" to={`/calendar?day=${eventDayISO(event.starts_at)}`}>
                   <span className="icon-well"><CalendarIcon title="" /></span>
                   <span>
@@ -631,11 +633,36 @@ export function HomePage() {
                     <p>{formatWhen(event.starts_at)}</p>
                   </span>
                 </Link>
+                <button
+                  type="button"
+                  className="event-action event-action-label danger"
+                  onClick={() => setDeleteTarget(event)}
+                >
+                  Delete
+                </button>
               </li>
             ))}
           </ul>
         )}
       </section>
+      {deleteTarget ? (
+        <ConfirmSheet
+          titleId="home-event-delete-title"
+          title="Delete this event?"
+          body={`Are you sure you want to delete “${deleteTarget.title}”? This cannot be undone.`}
+          primaryLabel="Delete"
+          primaryClass="danger"
+          onPrimary={() => {
+            setStudio({
+              ...studio,
+              events: studio.events.filter((row) => row.id !== deleteTarget.id),
+              deletedEventIds: [...new Set([...(studio.deletedEventIds ?? []), deleteTarget.id])],
+            });
+            setDeleteTarget(null);
+          }}
+          onClose={() => setDeleteTarget(null)}
+        />
+      ) : null}
       <section className="tile-grid" aria-label="Studio tools">
         <Link className="card action-tile" to="/audio">
           <span className="icon-well"><AudioIcon title="" /></span>
@@ -1560,6 +1587,12 @@ export function CalendarPage() {
     return map;
   }, [studio?.events]);
 
+  const otherEvents = useMemo(() => {
+    return [...(studio?.events ?? [])]
+      .filter((item) => eventDayISO(item.starts_at) !== selectedDay)
+      .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
+  }, [studio?.events, selectedDay]);
+
   if (!studio) return null;
 
   const editing = studio.events.find((item) => item.id === editingId) ?? null;
@@ -1835,11 +1868,10 @@ export function CalendarPage() {
                   )}
                   <button
                     type="button"
-                    className="event-action danger"
-                    aria-label="Delete"
+                    className="event-action event-action-label danger"
                     onClick={() => setPrompt({ kind: "delete", item })}
                   >
-                    <BinIcon title="" />
+                    Delete
                   </button>
                 </div>
               </li>
@@ -1847,6 +1879,69 @@ export function CalendarPage() {
           </ul>
         )}
       </section>
+      {otherEvents.length ? (
+        <section className="stack" aria-label="Other events">
+          <h3 className="cal-day-heading">Other events</h3>
+          <ul className="stack" style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            {otherEvents.map((item) => (
+              <li key={item.id} className={`card stack${item.status === "cancelled" ? " event-cancelled" : ""}`}>
+                <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <strong>{item.title}</strong>
+                    <p>{formatWhen(item.starts_at)}</p>
+                  </div>
+                  <span className={`status ${item.status === "cancelled" ? "cancelled" : "present"}`}>
+                    {item.status === "cancelled" ? "Cancelled" : "Scheduled"}
+                  </span>
+                </div>
+                {item.notes ? <p>{item.notes}</p> : null}
+                <div className="event-actions" role="group" aria-label={`Actions for ${item.title}`}>
+                  <button type="button" className="event-action" aria-label="Share" onClick={() => shareEvent(item)}>
+                    <ShareIcon title="" />
+                  </button>
+                  <button
+                    type="button"
+                    className="event-action"
+                    aria-label="Edit"
+                    onClick={() => {
+                      setPrompt(null);
+                      setAdding(false);
+                      setEditingId(item.id);
+                    }}
+                  >
+                    <PencilIcon title="" />
+                  </button>
+                  {item.status === "cancelled" ? (
+                    <button
+                      type="button"
+                      className="event-action event-action-label"
+                      disabled={!canUncancelEvent(item)}
+                      onClick={() => restoreEvent(item)}
+                    >
+                      {canUncancelEvent(item) ? "Restore" : "Restore closed"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="event-action event-action-label"
+                      onClick={() => setPrompt({ kind: "cancel", item })}
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="event-action event-action-label danger"
+                    onClick={() => setPrompt({ kind: "delete", item })}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       {sheetOpen && !prompt ? (
         <AddSheet
           titleId="event-sheet-title"
@@ -1902,12 +1997,7 @@ export function CalendarPage() {
           body={`Are you sure you want to delete “${prompt.item.title}”? This cannot be undone.`}
           primaryLabel="Delete"
           primaryClass="danger"
-          altLabel={prompt.item.status === "cancelled" ? undefined : "Cancel event instead"}
           onPrimary={() => applyDelete(prompt.item)}
-          onAlt={() => {
-            applyCancel(prompt.item);
-            setPrompt(null);
-          }}
           onClose={() => setPrompt(null)}
         />
       ) : null}

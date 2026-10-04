@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthProvider";
 import { ThemeProvider } from "./context/ThemeProvider";
 import { AppShell } from "./components/AppShell";
@@ -17,11 +17,9 @@ import {
 
 function AppRoutes() {
   const [splashDone, setSplashDone] = useState(false);
-  const navigate = useNavigate();
   const finishSplash = useCallback(() => {
     setSplashDone(true);
-    navigate({ pathname: "/", search: "" }, { replace: true });
-  }, [navigate]);
+  }, []);
 
   return (
     <>

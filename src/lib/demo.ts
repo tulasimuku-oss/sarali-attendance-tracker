@@ -358,15 +358,6 @@ function withStudioDefaults(studio: StudioState): StudioState {
 }
 
 const SEVA_TITLE = "August temple sangeetha seva";
-const LEGACY_DUMMY_TITLES = new Set([
-  "Beginner Vocal",
-  "Intermediate Violin",
-  "Carnatic Advanced",
-  "Keyboard Kids",
-  "Makeup lesson · Meera Iyer",
-  "Studio recital rehearsal",
-  SEVA_TITLE,
-]);
 
 export function dummyEvents(): EventItem[] {
   return [
