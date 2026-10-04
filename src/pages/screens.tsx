@@ -1668,11 +1668,14 @@ export function CalendarPage() {
   }
 
   function applyDelete(item: EventItem) {
+    const deletedEventIds = [...new Set([...(studio.deletedEventIds ?? []), item.id])];
     setStudio({
       ...studio,
       events: studio.events.filter((row) => row.id !== item.id),
+      deletedEventIds,
     });
     if (editingId === item.id) closeSheet();
+    setPrompt(null);
     setMessage("Event deleted.");
   }
 
@@ -1900,10 +1903,7 @@ export function CalendarPage() {
           primaryLabel="Delete"
           primaryClass="danger"
           altLabel={prompt.item.status === "cancelled" ? undefined : "Cancel event instead"}
-          onPrimary={() => {
-            applyDelete(prompt.item);
-            setPrompt(null);
-          }}
+          onPrimary={() => applyDelete(prompt.item)}
           onAlt={() => {
             applyCancel(prompt.item);
             setPrompt(null);

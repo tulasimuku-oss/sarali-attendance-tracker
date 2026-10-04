@@ -132,6 +132,7 @@ export type StudioState = {
   profile: Profile;
   students: Student[];
   deletedStudents: Student[];
+  deletedEventIds?: string[];
   attendance: Attendance[];
   fees: Fee[];
   events: EventItem[];
@@ -280,13 +281,16 @@ function withStudioDefaults(studio: StudioState): StudioState {
     files: Array.isArray(note.files) ? note.files : [],
     links: Array.isArray(note.links) ? note.links : [],
   }));
-  const events = (Array.isArray(studio.events) ? studio.events : dummyEvents()).map((event) => ({
-    ...event,
-    status: event.status === "cancelled" ? "cancelled" as const : "scheduled" as const,
-    cancelled_at: event.status === "cancelled" ? event.cancelled_at : undefined,
-    notes: event.notes ?? "",
-    files: Array.isArray(event.files) ? event.files : [],
-  }));
+  const deletedEventIds = Array.isArray(studio.deletedEventIds) ? studio.deletedEventIds : [];
+  const events = (Array.isArray(studio.events) ? studio.events : []).
+    filter((event) => !deletedEventIds.includes(event.id)).
+    map((event) => ({
+      ...event,
+      status: event.status === "cancelled" ? "cancelled" as const : "scheduled" as const,
+      cancelled_at: event.status === "cancelled" ? event.cancelled_at : undefined,
+      notes: event.notes ?? "",
+      files: Array.isArray(event.files) ? event.files : [],
+    }));
   const sourceRecordings = studio.recordings ?? [];
   const recordings = sourceRecordings.some((clip) => {
     const row = clip as Recording & { student_id?: string };
@@ -336,6 +340,7 @@ function withStudioDefaults(studio: StudioState): StudioState {
     ...studio,
     students,
     deletedStudents,
+    deletedEventIds,
     attendance,
     notes,
     events,
@@ -344,6 +349,7 @@ function withStudioDefaults(studio: StudioState): StudioState {
   const unchanged =
     next.students === studio.students &&
     next.deletedStudents === studio.deletedStudents &&
+    next.deletedEventIds === studio.deletedEventIds &&
     next.attendance === studio.attendance &&
     next.notes === studio.notes &&
     next.events === studio.events &&

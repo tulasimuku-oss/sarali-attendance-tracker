@@ -1301,7 +1301,7 @@ html[data-theme="dark"] input[type="file"]:focus-visible {
 }
 .event-actions {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: stretch;
   gap: 0.4rem;
 }
