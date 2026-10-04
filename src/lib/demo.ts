@@ -87,9 +87,20 @@ export type EventItem = {
   starts_at: string;
   notes: string;
   status: "scheduled" | "cancelled";
+  cancelled_at?: string;
   batch?: string;
   files?: EventFile[];
 };
+
+const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+
+export function canUncancelEvent(event: EventItem, now = Date.now()) {
+  if (event.status !== "cancelled") return false;
+  if (!event.cancelled_at) return true;
+  const cancelledAt = new Date(event.cancelled_at).getTime();
+  if (Number.isNaN(cancelledAt)) return false;
+  return now - cancelledAt <= TWO_WEEKS_MS;
+}
 
 export type Note = {
   id: string;
@@ -269,14 +280,13 @@ function withStudioDefaults(studio: StudioState): StudioState {
     files: Array.isArray(note.files) ? note.files : [],
     links: Array.isArray(note.links) ? note.links : [],
   }));
-  const events = withSeededEvents(
-    (studio.events ?? []).map((event) => ({
-      ...event,
-      status: event.status === "cancelled" ? "cancelled" as const : "scheduled" as const,
-      notes: event.notes ?? "",
-      files: Array.isArray(event.files) ? event.files : [],
-    }))
-  );
+  const events = (Array.isArray(studio.events) ? studio.events : dummyEvents()).map((event) => ({
+    ...event,
+    status: event.status === "cancelled" ? "cancelled" as const : "scheduled" as const,
+    cancelled_at: event.status === "cancelled" ? event.cancelled_at : undefined,
+    notes: event.notes ?? "",
+    files: Array.isArray(event.files) ? event.files : [],
+  }));
   const sourceRecordings = studio.recordings ?? [];
   const recordings = sourceRecordings.some((clip) => {
     const row = clip as Recording & { student_id?: string };
@@ -365,20 +375,7 @@ export function dummyEvents(): EventItem[] {
 }
 
 export function withSeededEvents(events: EventItem[]): EventItem[] {
-  const custom = events.filter((event) => !LEGACY_DUMMY_TITLES.has(event.title));
-  const seva = events.find((event) => event.title === SEVA_TITLE);
-  const recital = events.find((event) => event.title === "Studio recital rehearsal");
-  const seed = seva
-    ? {
-        ...seva,
-        notes: seva.notes.includes("term concert")
-          ? "All batches — August temple sangeetha seva."
-          : seva.notes,
-      }
-    : recital
-      ? { ...recital, title: SEVA_TITLE, notes: "All batches — August temple sangeetha seva." }
-      : dummyEvents()[0];
-  return [seed, ...custom];
+  return events;
 }
 
 export function toLocalDateTime(date: Date) {

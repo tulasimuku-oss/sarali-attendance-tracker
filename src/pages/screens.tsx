@@ -3,6 +3,7 @@ import { useAuth } from "../context/auth-context";
 import {
   assignStudentBatches,
   batchesOf,
+  canUncancelEvent,
   formatStudentBatches,
   futureAttendanceWithStudent,
   MAX_STUDENT_CLASSES,
@@ -16,7 +17,6 @@ import {
   toLocalDateTime,
   uid,
   uniqueClassNames,
-  withSeededEvents,
   type Attendance,
   type AttendanceStatus,
   type EventItem,
@@ -1535,19 +1535,6 @@ export function CalendarPage() {
   const sheetOpen = adding || editingId !== null;
 
   useEffect(() => {
-    if (!studio) return;
-    const next = withSeededEvents(studio.events);
-    const same =
-      next.length === studio.events.length &&
-      next.every((event, index) =>
-        event.id === studio.events[index]?.id &&
-        event.title === studio.events[index]?.title &&
-        event.notes === studio.events[index]?.notes
-      );
-    if (!same) setStudio({ ...studio, events: next });
-  }, [studio, setStudio]);
-
-  useEffect(() => {
     if (!sheetOpen) return;
     titleRef.current?.focus();
   }, [sheetOpen, editingId]);
@@ -1658,17 +1645,23 @@ export function CalendarPage() {
     setStudio({
       ...studio,
       events: studio.events.map((row) =>
-        row.id === item.id ? { ...row, status: "cancelled" } : row
+        row.id === item.id
+          ? { ...row, status: "cancelled", cancelled_at: new Date().toISOString() }
+          : row
       ),
     });
     setMessage("Event cancelled.");
   }
 
   function restoreEvent(item: EventItem) {
+    if (!canUncancelEvent(item)) {
+      setMessage("This event can no longer be un-cancelled.");
+      return;
+    }
     setStudio({
       ...studio,
       events: studio.events.map((row) =>
-        row.id === item.id ? { ...row, status: "scheduled" } : row
+        row.id === item.id ? { ...row, status: "scheduled", cancelled_at: undefined } : row
       ),
     });
     setMessage("Event restored.");
@@ -1820,8 +1813,13 @@ export function CalendarPage() {
                     <PencilIcon title="" />
                   </button>
                   {item.status === "cancelled" ? (
-                    <button type="button" className="event-action event-action-label" onClick={() => restoreEvent(item)}>
-                      Restore
+                    <button
+                      type="button"
+                      className="event-action event-action-label"
+                      disabled={!canUncancelEvent(item)}
+                      onClick={() => restoreEvent(item)}
+                    >
+                      {canUncancelEvent(item) ? "Restore" : "Restore closed"}
                     </button>
                   ) : (
                     <button
@@ -1917,7 +1915,7 @@ export function CalendarPage() {
         <ConfirmSheet
           titleId="event-cancel-title"
           title="Cancel this event?"
-          body={`Are you sure you want to cancel “${prompt.item.title}”? You can reschedule it instead.`}
+          body={`Are you sure you want to cancel “${prompt.item.title}”? You can restore it for up to 2 weeks.`}
           primaryLabel="Cancel event"
           altLabel="Reschedule instead"
           onPrimary={() => {
