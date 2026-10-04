@@ -882,7 +882,7 @@ export function StudentsPage() {
     <div className="stack page-with-add">
       <h2>Students</h2>
       <button
-        className="secondary add-sheet-btn"
+        className="secondary add-sheet-btn container-btn"
         type="button"
         onClick={openAdd}
       >
@@ -1728,7 +1728,7 @@ export function CalendarPage() {
     <div className="stack cal-page">
       <h2>Calendar</h2>
       <button
-        className="secondary cal-add-btn"
+        className="secondary cal-add-btn container-btn"
         type="button"
         onClick={() => {
           setEditingId(null);
@@ -2214,7 +2214,7 @@ export function NotesPage() {
     <div className="stack page-with-add">
       <h2>Personal notes</h2>
       <button
-        className="secondary add-sheet-btn"
+        className="secondary add-sheet-btn container-btn"
         type="button"
         onClick={() => {
           setEditingId(null);
@@ -2563,7 +2563,7 @@ export function AudioPage() {
     <div className="stack page-with-add">
       <h2>Audio</h2>
       <button
-        className="secondary add-sheet-btn"
+        className="secondary add-sheet-btn container-btn"
         type="button"
         onClick={() => setAdding(true)}
       >
@@ -2691,7 +2691,7 @@ export function AudioPage() {
   );
 }
 
-const SUPPORT_OTHER = "Other (please describe in detail)";
+const SUPPORT_OTHER = "Other";
 
 function supportWordCount(text: string) {
   return text.trim().split(/\s+/).filter(Boolean).length;
@@ -2701,40 +2701,37 @@ const SUPPORT_TOPICS = [
     id: "attendance",
     label: "Attendance related",
     issues: [
-      "I can't modify my student list",
-      "I can't cancel/restore a class",
-      "I am unable to view the history",
-      "I am unable to mark attendance for specific or multiple students",
+      "Student list modification",
+      "Class cancellation/restoration",
+      "Attendance history",
     ],
   },
   {
     id: "fees",
     label: "Fees related",
     issues: [
-      "I can't modify fee status",
-      "I can't change fee payment date",
-      "I am unable to view the history",
+      "Fee status modification",
+      "Fee payment date",
+      "Payment history",
     ],
   },
   {
     id: "events",
     label: "Event related",
     issues: [
-      "I am unable to schedule a new event",
-      "I am unable to cancel an event",
-      "I am unable to reschedule an event",
-      "I am unable to share an event",
-      "I am unable to view the history",
+      "Scheduling/rescheduling",
+      "Cancellation",
+      "Sharing",
+      "Event history",
     ],
   },
   {
     id: "media",
     label: "Media related",
     issues: [
-      "I am unable to upload files",
-      "I am unable to delete uploaded files",
-      "I am unable to modify files",
-      "I am unable to find previously uploaded files",
+      "File upload/download",
+      "File modification",
+      "File history",
     ],
   },
 ] as const;
@@ -2747,7 +2744,7 @@ export function SettingsPage() {
   const [supportOpen, setSupportOpen] = useState(false);
   const [supportTopic, setSupportTopic] = useState<(typeof SUPPORT_TOPICS)[number]["id"] | "">("");
   const [supportIssues, setSupportIssues] = useState<string[]>([]);
-  const [supportOther, setSupportOther] = useState("");
+  const [supportNotes, setSupportNotes] = useState<Record<string, string>>({});
   const [supportTried, setSupportTried] = useState(false);
   const [supportFlashError, setSupportFlashError] = useState(false);
   const [supportThanks, setSupportThanks] = useState(false);
@@ -2846,7 +2843,7 @@ export function SettingsPage() {
     if (id === supportTopic) return;
     setSupportTopic(id);
     setSupportIssues([]);
-    setSupportOther("");
+    setSupportNotes({});
     setSupportTried(false);
     setSupportFlashError(false);
     setSupportThanks(false);
@@ -2876,17 +2873,16 @@ export function SettingsPage() {
       setSupportMessage("Select at least one issue.");
       return;
     }
-    const wantsOther = supportIssues.includes(SUPPORT_OTHER);
-    const otherWords = supportWordCount(supportOther);
-    if (wantsOther && otherWords < 3) {
+    const missingDetail = supportIssues.some((item) => supportWordCount(supportNotes[item] ?? "") < 3);
+    if (missingDetail) {
       setSupportFlashError(true);
-      setSupportMessage("Please describe the issue in at least 3 words.");
+      setSupportMessage("Please describe each selected issue in at least 3 words.");
       return;
     }
-    const lines = supportIssues
-      .filter((item) => item !== SUPPORT_OTHER)
-      .map((item) => `• ${item}`);
-    if (wantsOther) lines.push(`• Other: ${supportOther.trim()}`);
+    const lines = supportIssues.map((item) => {
+      const detail = (supportNotes[item] ?? "").trim();
+      return `• ${item}\n  ${detail}`;
+    });
     const result = await sharePlain(
       `Sarali support · ${topic.label}`,
       `${studio.profile.full_name} (@${studio.profile.username})\n${topic.label}\n\n${lines.join("\n")}`
@@ -2895,22 +2891,22 @@ export function SettingsPage() {
     setSupportOpen(false);
     setSupportTopic("");
     setSupportIssues([]);
-    setSupportOther("");
+    setSupportNotes({});
     setSupportTried(false);
     setSupportFlashError(false);
     setSupportThanks(true);
     setSupportMessage("");
   }
 
-  const wantsOther = supportIssues.includes(SUPPORT_OTHER);
-  const otherWords = supportWordCount(supportOther);
   const supportReady =
     Boolean(supportTopic) &&
     supportIssues.length > 0 &&
-    (!wantsOther || otherWords >= 3);
+    supportIssues.every((item) => supportWordCount(supportNotes[item] ?? "") >= 3);
   const topicError = supportTried && !supportTopic;
   const issueError = supportTried && Boolean(supportTopic) && supportIssues.length === 0;
-  const otherError = supportTried && wantsOther && otherWords < 3;
+  function noteErrorFor(issue: string) {
+    return supportTried && supportIssues.includes(issue) && supportWordCount(supportNotes[issue] ?? "") < 3;
+  }
 
   return (
     <div className="stack">
@@ -2939,8 +2935,18 @@ export function SettingsPage() {
       </section>
       <section className="card stack section-card">
         <h3>Appearance</h3>
-        <p>Choose light paper, dark kraft, or follow this device.</p>
+        <p>Dark mode and device colour scheme are temporarily unavailable. Keep checking back for future updates</p>
         <div className="theme-choices" role="radiogroup" aria-label="Appearance">
+          <button
+            type="button"
+            className="theme-choice theme-choice-light"
+            role="radio"
+            aria-checked={!DARK_MODE_AVAILABLE || preference === "light"}
+            onClick={() => setPreference("light")}
+          >
+            <span className="theme-choice-mark" aria-hidden="true" />
+            Light mode
+          </button>
           <button
             type="button"
             className="theme-choice theme-choice-dark"
@@ -2951,16 +2957,6 @@ export function SettingsPage() {
           >
             <span className="theme-choice-mark" aria-hidden="true" />
             Dark mode
-          </button>
-          <button
-            type="button"
-            className="theme-choice theme-choice-light"
-            role="radio"
-            aria-checked={!DARK_MODE_AVAILABLE || preference === "light"}
-            onClick={() => setPreference("light")}
-          >
-            <span className="theme-choice-mark" aria-hidden="true" />
-            Light mode
           </button>
           <button
             type="button"
@@ -2980,7 +2976,7 @@ export function SettingsPage() {
       <section className="card stack section-card">
         <h3>Backup</h3>
         <p>Download a copy of this studio, or restore from a previous file.</p>
-        <button type="button" className="icon-text-btn" onClick={downloadBackup}>
+        <button type="button" className="icon-text-btn backup-download" onClick={downloadBackup}>
           <DownloadIcon title="" />
           Download backup
         </button>
@@ -3030,32 +3026,43 @@ export function SettingsPage() {
                         role="group"
                         aria-label={`${topic.label} issues`}
                       >
-                        {[...topic.issues, SUPPORT_OTHER].map((issue) => (
-                          <button
-                            key={issue}
-                            type="button"
-                            className="support-issue"
-                            aria-pressed={supportIssues.includes(issue)}
-                            onClick={() => toggleSupportIssue(issue)}
-                          >
-                            {issue}
-                          </button>
-                        ))}
-                        {supportIssues.includes(SUPPORT_OTHER) ? (
-                          <label className={`support-other${otherError ? " is-error" : ""}`}>
-                            Describe in detail
-                            <textarea
-                              value={supportOther}
-                              onChange={(event) => setSupportOther(event.target.value)}
-                              rows={4}
-                              placeholder="What happened, and when?"
-                              aria-invalid={otherError}
-                            />
-                            {otherError ? (
-                              <span className="support-hint">Please describe the issue in at least 3 words.</span>
-                            ) : null}
-                          </label>
-                        ) : null}
+                        {[...topic.issues, SUPPORT_OTHER].map((issue) => {
+                          const selectedIssue = supportIssues.includes(issue);
+                          const detailError = noteErrorFor(issue);
+                          return (
+                            <div key={issue} className="support-issue-block">
+                              <button
+                                type="button"
+                                className="support-issue"
+                                aria-pressed={selectedIssue}
+                                onClick={() => toggleSupportIssue(issue)}
+                              >
+                                {issue}
+                              </button>
+                              {selectedIssue ? (
+                                <label className={`support-other${detailError ? " is-error" : ""}`}>
+                                  Add details
+                                  <textarea
+                                    value={supportNotes[issue] ?? ""}
+                                    onChange={(event) => {
+                                      const value = event.target.value;
+                                      setSupportNotes((current) => ({ ...current, [issue]: value }));
+                                      setSupportFlashError(false);
+                                      setSupportThanks(false);
+                                      setSupportMessage("");
+                                    }}
+                                    rows={3}
+                                    placeholder="What happened, and when? Use at least 3 words."
+                                    aria-invalid={detailError}
+                                  />
+                                  {detailError ? (
+                                    <span className="support-hint">Please describe the issue in at least 3 words.</span>
+                                  ) : null}
+                                </label>
+                              ) : null}
+                            </div>
+                          );
+                        })}
                       </div>
                     ) : null}
                   </div>

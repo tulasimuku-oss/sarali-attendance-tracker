@@ -278,7 +278,12 @@ html[data-theme="dark"] main > .stack > h2 {
   z-index: 4;
   margin: -1rem -1rem 1rem;
   padding: 1rem 1rem 0.85rem;
-  background: transparent;
+  background-color: var(--paper);
+  background-image: var(--paper-wash);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: top center;
+  background-attachment: fixed;
 }
 .header-settings {
   width: 2.6rem;
@@ -563,6 +568,10 @@ p { margin: 0; }
   color: var(--ink);
   font-weight: 650;
   box-shadow: var(--press) !important;
+}
+.support-issue-block {
+  display: grid;
+  gap: 0.32rem;
 }
 .support-other {
   display: grid;
@@ -1371,6 +1380,10 @@ html[data-theme="dark"] button.danger {
 .add-sheet-btn {
   width: 100%;
 }
+button.container-btn {
+  background-color: #ffceb8;
+  color: var(--ink);
+}
 .roster {
   list-style: none;
   margin: 0;
@@ -1697,6 +1710,9 @@ button.rec-btn.is-hidden:disabled {
 .icon-text-btn .brand-icon {
   width: 1.2rem;
   height: 1.2rem;
+}
+button.backup-download .brand-icon img {
+  filter: brightness(0) invert(86%) sepia(18%) saturate(520%) hue-rotate(325deg) brightness(104%);
 }
 .rec-count {
   margin: 0;
