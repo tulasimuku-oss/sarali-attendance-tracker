@@ -32,6 +32,7 @@ import { createPortal } from "react-dom";
 import {
   AbsentIcon,
   AudioIcon,
+  BinIcon,
   CalendarIcon,
   CloseIcon,
   DownloadIcon,
@@ -184,7 +185,7 @@ function ConfirmSheet({
   titleId: string;
   title: string;
   body: string;
-  primaryLabel: string;
+  primaryLabel: ReactNode;
   primaryClass?: string;
   altLabel?: string;
   onPrimary: () => void;
@@ -194,7 +195,7 @@ function ConfirmSheet({
   return (
     <AddSheet titleId={titleId} title={title} onClose={onClose}>
       <p>{body}</p>
-      <button type="button" className={primaryClass} onClick={onPrimary}>{primaryLabel}</button>
+      <button type="button" className={`${primaryClass} icon-text-btn`.trim()} onClick={onPrimary}>{primaryLabel}</button>
       {altLabel && onAlt ? (
         <button type="button" className="secondary" onClick={onAlt}>{altLabel}</button>
       ) : null}
@@ -638,6 +639,7 @@ export function HomePage() {
                   className="event-action event-action-label danger"
                   onClick={() => setDeleteTarget(event)}
                 >
+                  <BinIcon title="" />
                   Delete
                 </button>
               </li>
@@ -650,7 +652,7 @@ export function HomePage() {
           titleId="home-event-delete-title"
           title="Delete this event?"
           body={`Are you sure you want to delete “${deleteTarget.title}”? This cannot be undone.`}
-          primaryLabel="Delete"
+          primaryLabel={<><BinIcon title="" /> Delete</>}
           primaryClass="danger"
           onPrimary={() => {
             setStudio({
@@ -901,7 +903,7 @@ export function StudentsPage() {
       ) : null}
       <FlashAlert message={message} fading={fading} />
       {roster.length === 0 ? (
-        <p className="muted">No students yet.</p>
+        <p className="card empty-alert">No students yet.</p>
       ) : (
         <ul className="card roster roster-card">
           {roster.map((student) => (
@@ -918,7 +920,8 @@ export function StudentsPage() {
                 >
                   Edit
                 </button>
-                <button type="button" className="mark-btn" onClick={() => setRemoveTarget(student)}>
+                <button type="button" className="mark-btn icon-text-btn" onClick={() => setRemoveTarget(student)}>
+                  <BinIcon title="" />
                   Delete
                 </button>
               </div>
@@ -1309,7 +1312,7 @@ export function AttendancePage() {
         )}
       </section>
       {noneSelected ? (
-        <p className="muted" role="status">No batch has been selected.</p>
+        <p className="card empty-alert" role="status">No batch has been selected.</p>
       ) : (
       <ul className="stack" style={{ listStyle: "none", padding: 0, margin: 0 }}>
         {visible.map((student) => {
@@ -1802,7 +1805,7 @@ export function CalendarPage() {
           {calendarDayHeading(selectedDay, today)}
         </h3>
         {dayEvents.length === 0 ? (
-          <p className="muted">No events on this day.</p>
+          <p className="card empty-alert">No events on this day.</p>
         ) : (
           <ul className="stack" style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {dayEvents.map((item) => (
@@ -1871,6 +1874,7 @@ export function CalendarPage() {
                     className="event-action event-action-label danger"
                     onClick={() => setPrompt({ kind: "delete", item })}
                   >
+                    <BinIcon title="" />
                     Delete
                   </button>
                 </div>
@@ -1934,6 +1938,7 @@ export function CalendarPage() {
                     className="event-action event-action-label danger"
                     onClick={() => setPrompt({ kind: "delete", item })}
                   >
+                    <BinIcon title="" />
                     Delete
                   </button>
                 </div>
@@ -1995,7 +2000,7 @@ export function CalendarPage() {
           titleId="event-delete-title"
           title="Delete this event?"
           body={`Are you sure you want to delete “${prompt.item.title}”? This cannot be undone.`}
-          primaryLabel="Delete"
+          primaryLabel={<><BinIcon title="" /> Delete</>}
           primaryClass="danger"
           onPrimary={() => applyDelete(prompt.item)}
           onClose={() => setPrompt(null)}
@@ -2224,7 +2229,7 @@ export function NotesPage() {
       </button>
       <FlashAlert message={message} fading={fading} />
       {studio.notes.length === 0 ? (
-        <p className="muted">No notes yet.</p>
+        <p className="card empty-alert">No notes yet.</p>
       ) : (
         studio.notes.map((note) => (
           <article key={note.id} className="card stack">
@@ -2247,7 +2252,10 @@ export function NotesPage() {
               >
                 Edit
               </button>
-              <button type="button" className="mark-btn" onClick={() => deleteNote(note)}>Delete</button>
+              <button type="button" className="mark-btn icon-text-btn" onClick={() => deleteNote(note)}>
+                <BinIcon title="" />
+                Delete
+              </button>
             </div>
           </article>
         ))
@@ -2563,7 +2571,7 @@ export function AudioPage() {
       </button>
       <FlashAlert message={message} fading={fading} />
       {studio.recordings.length === 0 ? (
-        <p className="muted">No recordings yet.</p>
+        <p className="card empty-alert">No recordings yet.</p>
       ) : (
         studio.recordings.map((clip) => (
           <article key={clip.id} className="card">
